@@ -17,6 +17,10 @@
  * @todo Remove -- it is already in standards.h
  */
 #define NPORT 5
+#define NORTH 2
+#define SOUTH 3
+#define EAST  0
+#define WEST  1
 #define LOCAL 4
 
 static const uint8_t BRLITE_MID_SIZE = 14;
@@ -58,6 +62,10 @@ public:
 	std::array<sc_out<bool>,			NPORT>	req_out;
 	std::array<sc_in<bool>,				NPORT>	ack_in;
 
+	SC_HAS_PROCESS(BrLiteRouter);
+	BrLiteRouter(sc_module_name _name, uint8_t _address);
+
+private:
 	enum IN_FSM {
 		IN_INIT,
 		IN_ARBITRATION,
@@ -77,10 +85,6 @@ public:
 		OUT_WAIT_ACK_DOWN,
 	};
 
-	SC_HAS_PROCESS(BrLiteRouter);
-	BrLiteRouter(sc_module_name _name, uint8_t _address);
-
-private:
 	sc_signal<uint8_t>	selected_line;
 	sc_signal<uint8_t>	selected_port;
 	sc_signal<uint8_t>	source_idx;
