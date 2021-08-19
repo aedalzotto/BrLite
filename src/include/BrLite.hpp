@@ -32,6 +32,10 @@ public:
 
 	SC_HAS_PROCESS(BrLite);
 	BrLite(sc_module_name _name, uint8_t x_size, uint8_t y_size);
+
 private:
-	
+	std::vector<BrLiteRouter*> routers;
+
+	std::vector<sc_signal<bool>> 		bool_gnd;
+	std::vector<sc_signal<uint32_t>>	word_gnd;
 };

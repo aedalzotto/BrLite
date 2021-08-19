@@ -43,6 +43,12 @@ void BrLiteRouter::input()
 		return;
 	}
 
+	bool is_in_table;
+	uint8_t port;
+	uint8_t source_in;
+	uint8_t svc;
+	uint16_t id_in;
+
 	switch(in_state){
 		case IN_INIT:
 			if(!clear_local){
@@ -55,7 +61,6 @@ void BrLiteRouter::input()
 			}
 			break;
 		case IN_ARBITRATION:
-			uint8_t port = (selected_port + 1) % NPORT;
 			while(port != selected_port){
 				if(req_in[port]){
 					selected_port = port;
@@ -68,9 +73,10 @@ void BrLiteRouter::input()
 			in_state = IN_TEST_SPACE;
 			break;
 		case IN_TEST_SPACE:
-			bool is_in_table = false;
-			uint8_t source_in = (header_in[selected_port] >> 10) & 0xFF;
-			uint16_t id_in = (header_in[selected_port] >> 18) & 0x3FFF;
+			port = (selected_port + 1) % NPORT;
+			is_in_table = false;
+			source_in = (header_in[selected_port] >> 10) & 0xFF;
+			id_in = (header_in[selected_port] >> 18) & 0x3FFF;
 			for(int i = 0; i < BRLITE_CAM_SIZE; i++){
 				if(used_table[i]){
 					uint8_t source_table = (header_table[i] >> 10) & 0xFF;
@@ -84,7 +90,7 @@ void BrLiteRouter::input()
 				}
 			}
 
-			uint8_t svc = header_in[selected_port] & 0x3;
+			svc = header_in[selected_port] & 0x3;
 			if(!is_in_table && (svc == SVC_TGT || svc == SVC_ALL)){
 				/* Message not in CAM */
 				bool table_full = true;
@@ -145,6 +151,11 @@ void BrLiteRouter::output()
 		return;
 	}
 
+	uint8_t line;
+	uint8_t svc;
+	uint8_t target;
+	bool ack;
+
 	switch(out_state){
 		case OUT_INIT:
 			if(!clear_local){
@@ -162,7 +173,7 @@ void BrLiteRouter::output()
 			}
 			break;
 		case OUT_ARBITRATION:
-			uint8_t line = (selected_line + 1) % BRLITE_CAM_SIZE;
+			line = (selected_line + 1) % BRLITE_CAM_SIZE;
 			while(line != selected_line){
 				if(used_table[line] & pending_table[line]){
 					selected_line = line;
@@ -175,8 +186,8 @@ void BrLiteRouter::output()
 			out_state = OUT_TEST_SVC;
 			break;
 		case OUT_TEST_SVC:
-			uint8_t svc = header_table[selected_line] & 0x3;
-			uint8_t target = (header_table[selected_line] >> 2) & 0xFF;
+			svc = header_table[selected_line] & 0x3;
+			target = (header_table[selected_line] >> 2) & 0xFF;
 
 			if(svc == SVC_CLEAR || svc == SVC_ALL || (svc == SVC_TGT && target != router_address)){
 				/* Propagate */
@@ -235,7 +246,7 @@ void BrLiteRouter::output()
 
 			break;
 		case OUT_WAIT_ACK_PORTS:
-			bool ack = 1;
+			ack = 1;
 			for(int i = 0; i < NPORT; i++){
 				if(ack_in[i]){
 					ack_ports[i] = 1;
@@ -262,7 +273,7 @@ void BrLiteRouter::output()
 			
 			break;
 		case OUT_CLEAR_TABLE:
-			uint8_t target = (header_table[selected_line] >> 2) & 0xFF;
+			target = (header_table[selected_line] >> 2) & 0xFF;
 			if(target == router_address){
 				uint8_t source = (header_table[selected_line] >> 10) & 0xFF;
 				uint8_t src_x = source >> 4;
