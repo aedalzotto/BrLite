@@ -29,9 +29,13 @@ BrLite::BrLite(sc_module_name _name, uint8_t x_size, uint8_t y_size) :
 {
 	routers.reserve(x_size*y_size);
 
-	for(int y = 0; y < y_size; y++)
-		for(int x = 0; x < x_size; x++)
-			routers.push_back(new BrLiteRouter("router", x << 4 | y));
+	for(int y = 0; y < y_size; y++){
+		for(int x = 0; x < x_size; x++){
+			char name[255];
+			snprintf(name, 255, "router_%x", x << 4 | y);
+			routers.push_back(new BrLiteRouter(name, x << 4 | y));
+		}
+	}
 
 	static uint16_t bool_idx = 0;
 	static uint16_t word_idx = 0;
