@@ -61,6 +61,7 @@ void BrLiteRouter::input()
 			}
 			break;
 		case IN_ARBITRATION:
+			port = (selected_port + 1) % NPORT;
 			while(port != selected_port){
 				if(req_in[port]){
 					selected_port = port;
@@ -160,7 +161,6 @@ void BrLiteRouter::output()
 		case OUT_INIT:
 			if(!clear_local){
 				bool has_pending = false;
-				uint8_t pending_idx = 0;
 				for(int i = 0; i < BRLITE_CAM_SIZE; i++){
 					if(used_table[i] && pending_table[i]){
 						has_pending = true;
@@ -313,6 +313,7 @@ void BrLiteRouter::input_output()
 
 		clear_local = false;
 		wrote_local = false;
+		local_busy = false;
 		wrote_idx = 0;
 		wrote_tick = 0;
 
@@ -328,6 +329,7 @@ void BrLiteRouter::input_output()
 	if(clear_local && in_state == IN_INIT && out_state == OUT_INIT){
 		clear_local = false;
 		wrote_local = false;
+		local_busy = false;
 		header_table[wrote_idx] = (header_table[wrote_idx] & 0xFFFFFFFC) | SVC_CLEAR;
 		pending_table[wrote_idx] = true;
 	}
@@ -338,6 +340,7 @@ void BrLiteRouter::input_output()
 			pending_table[free_idx] = true;
 			header_table[free_idx] = header_in[selected_port];
 			if(selected_port == LOCAL){
+				local_busy = true;
 				wrote_local = true;
 				wrote_tick = current_tick + BRLITE_CLEAR_INTERVAL;
 				wrote_idx = free_idx;

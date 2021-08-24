@@ -23,6 +23,7 @@ BrLite::BrLite(sc_module_name _name, uint8_t x_size, uint8_t y_size) :
 	req_out(x_size*y_size),
 	data_out(x_size*y_size),
 	header_out(x_size*y_size),
+	local_busy(x_size*y_size),
 	bool_gnd((x_size*2 + y_size*2)*2),
 	word_gnd((x_size*2 + y_size*2)*2)
 {
@@ -100,6 +101,8 @@ BrLite::BrLite(sc_module_name _name, uint8_t x_size, uint8_t y_size) :
 			routers[y*x_size + x]->ack_in[LOCAL](ack_in[y*x_size + x]);
 			routers[y*x_size + x]->data_in[LOCAL](data_in[y*x_size + x]);
 			routers[y*x_size + x]->header_in[LOCAL](header_in[y*x_size + x]);
+
+			routers[y*x_size + x]->local_busy(local_busy[y*x_size + x]);
 		}
 	}
 

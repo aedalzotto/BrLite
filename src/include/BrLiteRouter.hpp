@@ -62,6 +62,8 @@ public:
 	std::array<sc_out<bool>,			NPORT>	req_out;
 	std::array<sc_in<bool>,				NPORT>	ack_in;
 
+	sc_out<bool> local_busy;
+
 	SC_HAS_PROCESS(BrLiteRouter);
 	BrLiteRouter(sc_module_name _name, uint8_t _address);
 

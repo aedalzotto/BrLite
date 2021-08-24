@@ -30,6 +30,8 @@ public:
 	std::vector<sc_out<uint32_t>> data_out;
 	std::vector<sc_out<uint32_t>> header_out;
 
+	std::vector<sc_out<bool>> local_busy;
+
 	SC_HAS_PROCESS(BrLite);
 	BrLite(sc_module_name _name, uint8_t x_size, uint8_t y_size);
 
