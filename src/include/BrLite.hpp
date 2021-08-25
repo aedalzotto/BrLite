@@ -33,7 +33,7 @@ public:
 	std::vector<sc_out<bool>> local_busy;
 
 	SC_HAS_PROCESS(BrLite);
-	BrLite(sc_module_name _name, uint8_t x_size, uint8_t y_size);
+	BrLite(sc_module_name _name, uint8_t _x_size, uint8_t _y_size);
 
 private:
 	std::vector<BrLiteRouter*> routers;
@@ -47,4 +47,9 @@ private:
 	std::vector<std::array<sc_signal<uint32_t>, NPORT - 1>> header_out_sig;
 	std::vector<std::array<sc_signal<bool>, NPORT - 1>> 	req_out_sig;
 	std::vector<std::array<sc_signal<bool>, NPORT - 1>> 	ack_in_sig;
+
+	uint8_t x_size;
+	uint8_t y_size;
+
+	void interconnection();
 };
