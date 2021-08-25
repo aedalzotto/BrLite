@@ -38,6 +38,13 @@ public:
 private:
 	std::vector<BrLiteRouter*> routers;
 
-	std::vector<sc_signal<bool>> 		bool_gnd;
-	std::vector<sc_signal<uint32_t>>	word_gnd;
+	std::vector<std::array<sc_signal<uint32_t>, NPORT - 1>> data_in_sig;
+	std::vector<std::array<sc_signal<uint32_t>, NPORT - 1>> header_in_sig;
+	std::vector<std::array<sc_signal<bool>, NPORT - 1>> 	req_in_sig;
+	std::vector<std::array<sc_signal<bool>, NPORT - 1>> 	ack_out_sig;
+
+	std::vector<std::array<sc_signal<uint32_t>, NPORT - 1>> data_out_sig;
+	std::vector<std::array<sc_signal<uint32_t>, NPORT - 1>> header_out_sig;
+	std::vector<std::array<sc_signal<bool>, NPORT - 1>> 	req_out_sig;
+	std::vector<std::array<sc_signal<bool>, NPORT - 1>> 	ack_in_sig;
 };
