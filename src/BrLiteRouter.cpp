@@ -86,6 +86,7 @@ void BrLiteRouter::input()
 					uint16_t id_table = (header_table[i] >> 18) & 0x3FFF;
 
 					if(id_table == id_in && source_in == source_table){
+						// std::cout << "PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": IS IN TABLE" << std::endl;
 						is_in_table = true;
 						source_idx = i;
 						break;
@@ -109,7 +110,7 @@ void BrLiteRouter::input()
 					std::cout << "++++++++++++++++++++++++++++++++++  CAM CHEIA  SEND LOCAL:  Address: " << router_address << std::endl;
 					in_state = IN_INIT;
 				} else {
-					// std::cout << "In PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": will write in cam" << std::endl;
+					std::cout << "In PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": will write in cam" << std::endl;
 					in_state = IN_WRITE;
 				}
 			} else if(is_in_table && svc == SVC_CLEAR){
@@ -123,7 +124,7 @@ void BrLiteRouter::input()
 			break;
 		case IN_WAIT_REQ_DOWN:
 			if(!req_in[selected_port]){
-				std::cout << "In PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": acked down " << std::endl;
+				// std::cout << "In PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": acked down " << std::endl;
 				ack_out[selected_port] = 0;
 				in_state = IN_INIT;
 			}
@@ -140,7 +141,7 @@ void BrLiteRouter::input()
 			break;
 		case IN_CLEAR:
 			ack_out[selected_port] = 1;
-			std::cout << "In PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": acked clear " << std::endl;
+			// std::cout << "In PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": acked clear " << std::endl;
 			in_state = IN_WAIT_REQ_DOWN;
 			break;
 	}
@@ -148,11 +149,10 @@ void BrLiteRouter::input()
 
 void BrLiteRouter::output()
 {
-	static std::array<bool,	NPORT>	ack_ports;
-
+	// static std::array<bool,	NPORT>	ack_ports;
 	if(reset){
+		ack_ports.fill(false);
 		for(int i = 0; i < NPORT; i++){
-			ack_ports[i] = 0;
 			req_out[i] = 0;
 		}
 		
@@ -171,7 +171,7 @@ void BrLiteRouter::output()
 			if(!clear_local){
 				bool has_pending = false;
 				for(int i = 0; i < BRLITE_CAM_SIZE; i++){
-					if(pending_table[i]){
+					if(used_table[i] && pending_table[i]){
 						has_pending = true;
 						break;
 					}
@@ -186,7 +186,7 @@ void BrLiteRouter::output()
 		case OUT_ARBITRATION:
 			line = (selected_line + 1) % BRLITE_CAM_SIZE;
 			while(line != selected_line){
-				if(pending_table[line]){
+				if(used_table[line] && pending_table[line]){
 					selected_line = line;
 					break;
 				}
@@ -209,7 +209,7 @@ void BrLiteRouter::output()
 						header_out[i] = header_table[selected_line];
 						data_out[i] = data_table[selected_line];
 					} else {
-						ack_ports[i] = 1;	/* Ack on the port the packet has entered */
+						ack_ports[i] = true;	/* Ack on the port the packet has entered */
 					}
 				}
 
@@ -219,10 +219,17 @@ void BrLiteRouter::output()
 					header_out[LOCAL] = header_table[selected_line];
 					data_out[LOCAL] = data_table[selected_line];
 				} else {
-					ack_ports[LOCAL] = 1;
+					ack_ports[LOCAL] = true;
 				}
 
-				// std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": propagated" << std::endl;
+				std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": propagated" << std::endl;
+
+				// if(router_address == 0x01){
+				// 	std::cout << "Initial ack ports ";
+				// 	for(int i = 0; i < NPORT; i++)
+				// 		std::cout << (int)ack_ports[i];
+				// 	std::cout << std::endl;
+				// }
 
 				out_state = OUT_WAIT_ACK_PORTS;
 			} else if(svc == SVC_TGT && target == router_address){
@@ -230,10 +237,10 @@ void BrLiteRouter::output()
 				header_out[LOCAL] = header_table[selected_line];
 				data_out[LOCAL] = data_table[selected_line];
 				
-				// std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": sent local" << std::endl;
+				std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": sent local" << std::endl;
 				out_state = OUT_SEND_LOCAL;
 			} else {
-				// std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": invalid" << std::endl;
+				std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": invalid" << std::endl;
 				out_state = OUT_INIT;
 			}
 			break;
@@ -265,25 +272,32 @@ void BrLiteRouter::output()
 		case OUT_WAIT_ACK_PORTS:
 			ack = 1;
 			for(int i = 0; i < NPORT; i++){
-				if(ack_in[i] && !ack_ports[i]){
-					// std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": received ack from " << (int)i << std::endl;
-					ack_ports[i] = 1;
+				if(!ack_ports[i] && ack_in[i]){
+					ack_ports[i] = true;
 					req_out[i] = 0;
+					// if(router_address == 0x01){
+					// 	std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": received ack from " << (int)i << "     ";
+					// 	for(int i = 0; i < NPORT; i++)
+					// 		std::cout << (int)ack_ports[i];
+					// 	std::cout << std::endl;
+					// }	
 				} else {
 					ack &= ack_ports[i];
 				}
 			}
 
 			if(ack){
-				for(int i = 0; i < NPORT; i++)
-					ack_ports[i] = 0;
+				// if(router_address == 0x00)
+				// 		std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": all outs acked " << std::endl;
+				
+				ack_ports.fill(false);
 
 				uint8_t svc = header_table[selected_line] & 0x3;
 				if(svc == SVC_CLEAR){
-					// std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": ports acked. clearing now" << std::endl;
+					std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": ports acked. clearing now" << std::endl;
 					out_state = OUT_CLEAR_TABLE;
 				} else {
-					// std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": ports acked" << std::endl;
+					std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": ports acked" << std::endl;
 					out_state = OUT_INIT;
 				}
 			}
@@ -313,7 +327,7 @@ void BrLiteRouter::output()
 					std::endl;
 			}
 
-			// std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": cleared" << std::endl;
+			std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": cleared" << std::endl;
 
 			out_state = OUT_INIT;
 			break;
@@ -322,10 +336,10 @@ void BrLiteRouter::output()
 
 void BrLiteRouter::input_output()
 {
-	static uint32_t current_tick = 0;
-	static uint32_t wrote_tick = 0;
-	static uint8_t wrote_idx = 0;
-	static bool wrote_local = false;
+	// static uint32_t current_tick = 0;
+	// static uint32_t wrote_tick = 0;
+	// static uint8_t wrote_idx = 0;
+	// static bool wrote_local = false;
 
 	if(reset){
 		for(int i = 0; i < BRLITE_CAM_SIZE; i++){
@@ -387,7 +401,7 @@ void BrLiteRouter::input_output()
 			pending_table[selected_line] = 0;
 			break;
 		case OUT_CLEAR_TABLE:
-			used_table[selected_line] = 0;
+			used_table[selected_line] = false;
 			break;
 		default:
 			break;

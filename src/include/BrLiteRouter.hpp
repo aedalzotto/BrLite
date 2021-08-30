@@ -37,7 +37,7 @@ static const uint8_t BRLITE_PLD_SIZE = 32;
 
 static const uint8_t BRLITE_CAM_SIZE = 8;
 
-static const uint8_t BRLITE_CLEAR_INTERVAL = 180;
+static const uint16_t BRLITE_CLEAR_INTERVAL = 180;
 
 static const uint8_t SVC_NULL = 0x0;
 static const uint8_t SVC_CLEAR = 0x1;
@@ -51,16 +51,16 @@ public:
 	sc_in<bool>	reset;
 
 	/* Data Inputs */
-	std::array<sc_in<uint32_t>,			NPORT>	data_in;
-	std::array<sc_in<uint32_t>,			NPORT>	header_in;
-	std::array<sc_in<bool>, 			NPORT>	req_in;
-	std::array<sc_out<bool>, 			NPORT>	ack_out;
+	sc_in<uint32_t>		data_in[NPORT];
+	sc_in<uint32_t>		header_in[NPORT];
+	sc_in<bool>			req_in[NPORT];
+	sc_out<bool>		ack_out[NPORT];
 
 	/* Data Outputs */
-	std::array<sc_out<uint32_t>,		NPORT>	data_out;
-	std::array<sc_out<uint32_t>,		NPORT>	header_out;
-	std::array<sc_out<bool>,			NPORT>	req_out;
-	std::array<sc_in<bool>,				NPORT>	ack_in;
+	sc_out<uint32_t>	data_out[NPORT];
+	sc_out<uint32_t>	header_out[NPORT];
+	sc_out<bool>		req_out[NPORT];
+	sc_in<bool>			ack_in[NPORT];
 
 	sc_out<bool> local_busy;
 
@@ -96,13 +96,19 @@ private:
 	sc_signal<enum IN_FSM> in_state;
 	sc_signal<enum OUT_FSM> out_state;
 
-	std::array<sc_signal<bool>,		BRLITE_CAM_SIZE> used_table;
-	std::array<sc_signal<bool>,		BRLITE_CAM_SIZE> pending_table;
-	std::array<sc_signal<uint8_t>,	BRLITE_CAM_SIZE> input_table;
-	std::array<sc_signal<uint32_t>,	BRLITE_CAM_SIZE> header_table;
-	std::array<sc_signal<uint32_t>,	BRLITE_CAM_SIZE> data_table;
+	sc_signal<bool>		used_table[BRLITE_CAM_SIZE];
+	sc_signal<bool>		pending_table[BRLITE_CAM_SIZE];
+	sc_signal<uint8_t>	input_table[BRLITE_CAM_SIZE];
+	sc_signal<uint32_t>	header_table[BRLITE_CAM_SIZE];
+	sc_signal<uint32_t>	data_table[BRLITE_CAM_SIZE];
 
 	uint8_t router_address;
+
+	std::array<bool,	NPORT>	ack_ports;
+	bool wrote_local;
+	uint8_t wrote_idx;
+	uint32_t wrote_tick;
+	uint32_t current_tick;
 
 	void input();
 	void output();
