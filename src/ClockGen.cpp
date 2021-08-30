@@ -9,10 +9,12 @@ ClockGen::ClockGen(sc_module_name _name) :
 
 void ClockGen::clock_gen()
 {
-	clock = 0;
-	wait(5, SC_NS);
-	clock = 1;
-	wait(5, SC_NS);
+	while(true){
+		clock = 0;
+		wait(5, SC_NS);
+		clock = 1;
+		wait(5, SC_NS);
+	}
 }
 
 void ClockGen::reset_gen()
