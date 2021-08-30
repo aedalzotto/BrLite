@@ -57,7 +57,6 @@ BrLite::BrLite(sc_module_name _name, uint8_t _x_size, uint8_t _y_size) :
 				routers[y*x_size + x]->header_in[i](header_in_sig[y*x_size+x][i]);
 				routers[y*x_size + x]->req_in[i](req_in_sig[y*x_size+x][i]);
 				routers[y*x_size + x]->ack_out[i](ack_out_sig[y*x_size+x][i]);
-
 			}
 			routers[y*x_size + x]->clock(clock);
 			routers[y*x_size + x]->reset(reset);
@@ -77,6 +76,7 @@ BrLite::BrLite(sc_module_name _name, uint8_t _x_size, uint8_t _y_size) :
 	}
 
 	SC_METHOD(interconnection);
+	sensitive << reset;
 	for(int i = 0; i < x_size*y_size; i++){
 		for(int j = 0; j < NPORT - 1; j++){
 			sensitive << data_out_sig[i][j];
@@ -104,7 +104,7 @@ void BrLite::interconnection()
 			} else {
 				/* Ground signals */
 				req_in_sig[y*x_size + x][NORTH] = 0;
-				ack_in_sig[y*x_size + x][NORTH] = 0;
+				ack_in_sig[y*x_size + x][NORTH] = 1;
 				header_in_sig[y*x_size + x][NORTH] = 0;
 				data_in_sig[y*x_size + x][NORTH] = 0;
 			}
@@ -117,7 +117,7 @@ void BrLite::interconnection()
 			} else {
 				/* Ground signals */
 				req_in_sig[y*x_size + x][SOUTH] = 0;
-				ack_in_sig[y*x_size + x][SOUTH] = 0;
+				ack_in_sig[y*x_size + x][SOUTH] = 1;
 				header_in_sig[y*x_size + x][SOUTH] = 0;
 				data_in_sig[y*x_size + x][SOUTH] = 0;
 			}
@@ -130,7 +130,7 @@ void BrLite::interconnection()
 			} else {
 				/* Ground signals */
 				req_in_sig[y*x_size + x][EAST] = 0;
-				ack_in_sig[y*x_size + x][EAST] = 0;
+				ack_in_sig[y*x_size + x][EAST] = 1;
 				header_in_sig[y*x_size + x][EAST] = 0;
 				data_in_sig[y*x_size + x][EAST] = 0;
 			}
@@ -143,7 +143,7 @@ void BrLite::interconnection()
 			} else {
 				/* Ground signals */
 				req_in_sig[y*x_size + x][WEST] = 0;
-				ack_in_sig[y*x_size + x][WEST] = 0;
+				ack_in_sig[y*x_size + x][WEST] = 1;
 				header_in_sig[y*x_size + x][WEST] = 0;
 				data_in_sig[y*x_size + x][WEST] = 0;
 			}
