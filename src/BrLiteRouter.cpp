@@ -56,8 +56,10 @@ void BrLiteRouter::input()
 				for(int i = 0; i < NPORT; i++)
 					has_request |= req_in[i];
 				
-				if(has_request)
+				if(has_request){
 					in_state = IN_ARBITRATION;
+					// std::cout << "In PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": has req" << std::endl;
+				}
 			}
 			break;
 		case IN_ARBITRATION:
@@ -70,11 +72,11 @@ void BrLiteRouter::input()
 				port++;
 				port %= NPORT;
 			}
+			// std::cout << "In PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": arbitred port " << (int)port << std::endl;
 
 			in_state = IN_TEST_SPACE;
 			break;
 		case IN_TEST_SPACE:
-			port = (selected_port + 1) % NPORT;
 			is_in_table = false;
 			source_in = (header_in[selected_port] >> 10) & 0xFF;
 			id_in = (header_in[selected_port] >> 18) & 0x3FFF;
@@ -107,17 +109,21 @@ void BrLiteRouter::input()
 					std::cout << "++++++++++++++++++++++++++++++++++  CAM CHEIA  SEND LOCAL:  Address: " << router_address << std::endl;
 					in_state = IN_INIT;
 				} else {
+					// std::cout << "In PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": will write in cam" << std::endl;
 					in_state = IN_WRITE;
 				}
 			} else if(is_in_table && svc == SVC_CLEAR){
+				std::cout << "In PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": will erase in cam" << std::endl;
 				in_state = IN_CLEAR;
 			} else {
+				std::cout << "In PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": in table, ignoring" << std::endl;
 				ack_out[selected_port] = 1;
 				in_state = IN_WAIT_REQ_DOWN;
 			}
 			break;
 		case IN_WAIT_REQ_DOWN:
 			if(!req_in[selected_port]){
+				std::cout << "In PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": acked down " << std::endl;
 				ack_out[selected_port] = 0;
 				in_state = IN_INIT;
 			}
@@ -128,10 +134,13 @@ void BrLiteRouter::input()
 
 			ack_out[selected_port] = 1;
 
+			std::cout << "In PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": wrote to cam " << (int)free_idx << std::endl;
+
 			in_state = IN_WAIT_REQ_DOWN;
 			break;
 		case IN_CLEAR:
 			ack_out[selected_port] = 1;
+			std::cout << "In PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": acked clear " << std::endl;
 			in_state = IN_WAIT_REQ_DOWN;
 			break;
 	}
@@ -162,32 +171,35 @@ void BrLiteRouter::output()
 			if(!clear_local){
 				bool has_pending = false;
 				for(int i = 0; i < BRLITE_CAM_SIZE; i++){
-					if(used_table[i] && pending_table[i]){
+					if(pending_table[i]){
 						has_pending = true;
 						break;
 					}
 				}
 
-				if(has_pending)
+				if(has_pending){
+					// std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": has pend " << std::endl;
 					out_state = OUT_ARBITRATION;
+				}
 			}
 			break;
 		case OUT_ARBITRATION:
 			line = (selected_line + 1) % BRLITE_CAM_SIZE;
 			while(line != selected_line){
-				if(used_table[line] & pending_table[line]){
+				if(pending_table[line]){
 					selected_line = line;
 					break;
 				}
 				line++;
 				line %= BRLITE_CAM_SIZE;
 			}
-
+			// std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": arbitred line " << (int)line << std::endl;
 			out_state = OUT_TEST_SVC;
 			break;
 		case OUT_TEST_SVC:
 			svc = header_table[selected_line] & 0x3;
 			target = (header_table[selected_line] >> 2) & 0xFF;
+			// std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": target is " << (int)target << std::endl;
 
 			if(svc == SVC_CLEAR || svc == SVC_ALL || (svc == SVC_TGT && target != router_address)){
 				/* Propagate */
@@ -210,14 +222,18 @@ void BrLiteRouter::output()
 					ack_ports[LOCAL] = 1;
 				}
 
+				// std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": propagated" << std::endl;
+
 				out_state = OUT_WAIT_ACK_PORTS;
 			} else if(svc == SVC_TGT && target == router_address){
 				req_out[LOCAL] = 1;
 				header_out[LOCAL] = header_table[selected_line];
 				data_out[LOCAL] = data_table[selected_line];
 				
+				// std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": sent local" << std::endl;
 				out_state = OUT_SEND_LOCAL;
 			} else {
+				// std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": invalid" << std::endl;
 				out_state = OUT_INIT;
 			}
 			break;
@@ -231,15 +247,16 @@ void BrLiteRouter::output()
 				uint8_t tgt_y = target & 0xF;
 				uint8_t svc = header_table[selected_line] & 0x3;
 				std::cout << ">>>>>>>>>>>>>>>>> SEND LOCAL: [[" << 
-					src_x << " " << src_y << " " <<
-					tgt_x << " " << tgt_y << "]] " << 
-					svc << " " <<
+					(int)src_x << " " << (int)src_y << " " <<
+					(int)tgt_x << " " << (int)tgt_y << "]] " << 
+					(int)svc << " " <<
 					data_table[selected_line] << " " <<
-					"Address: " << router_address << 
+					"Address: " << (int)router_address << 
 					std::endl;
 			}
 
 			if(ack_in[LOCAL]){
+				// std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": local acked" << std::endl;
 				req_out[LOCAL] = 0;
 				out_state = OUT_WAIT_ACK_DOWN;
 			}
@@ -248,7 +265,8 @@ void BrLiteRouter::output()
 		case OUT_WAIT_ACK_PORTS:
 			ack = 1;
 			for(int i = 0; i < NPORT; i++){
-				if(ack_in[i]){
+				if(ack_in[i] && !ack_ports[i]){
+					// std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": received ack from " << (int)i << std::endl;
 					ack_ports[i] = 1;
 					req_out[i] = 0;
 				} else {
@@ -261,15 +279,20 @@ void BrLiteRouter::output()
 					ack_ports[i] = 0;
 
 				uint8_t svc = header_table[selected_line] & 0x3;
-				if(svc == SVC_CLEAR)
+				if(svc == SVC_CLEAR){
+					// std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": ports acked. clearing now" << std::endl;
 					out_state = OUT_CLEAR_TABLE;
-				else
+				} else {
+					// std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": ports acked" << std::endl;
 					out_state = OUT_INIT;
+				}
 			}
 			break;
 		case OUT_WAIT_ACK_DOWN:			
-			if(!ack_in[LOCAL])
+			if(!ack_in[LOCAL]){
+				// std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": local acked down" << std::endl;
 				out_state = OUT_INIT;
+			}
 			
 			break;
 		case OUT_CLEAR_TABLE:
@@ -289,6 +312,8 @@ void BrLiteRouter::output()
 					data_table[selected_line] <<
 					std::endl;
 			}
+
+			// std::cout << "Out PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": cleared" << std::endl;
 
 			out_state = OUT_INIT;
 			break;
@@ -322,16 +347,18 @@ void BrLiteRouter::input_output()
 
 	current_tick = current_tick + 1;
 
-	if(wrote_local && wrote_tick < current_tick){
-		clear_local = true;
-	}
-
 	if(clear_local && in_state == IN_INIT && out_state == OUT_INIT){
 		clear_local = false;
-		wrote_local = false;
 		local_busy = false;
 		header_table[wrote_idx] = (header_table[wrote_idx] & 0xFFFFFFFC) | SVC_CLEAR;
 		pending_table[wrote_idx] = true;
+		std::cout << "PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": triggering a clear" << std::endl;
+	}
+
+	if(wrote_local && current_tick >= wrote_tick + BRLITE_CLEAR_INTERVAL){
+		std::cout << "PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": setting clear" << std::endl;
+		clear_local = true;
+		wrote_local = false;
 	}
 
 	switch(in_state){
@@ -340,14 +367,16 @@ void BrLiteRouter::input_output()
 			pending_table[free_idx] = true;
 			header_table[free_idx] = header_in[selected_port];
 			if(selected_port == LOCAL){
+				std::cout << "PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": detected local write" << std::endl;
 				local_busy = true;
 				wrote_local = true;
-				wrote_tick = current_tick + BRLITE_CLEAR_INTERVAL;
+				wrote_tick = current_tick;
 				wrote_idx = free_idx;
 			}
 			break;
 		case IN_CLEAR:
 			header_table[source_idx] = (header_table[source_idx] & 0xFFFFFFFC) | SVC_CLEAR;
+			pending_table[source_idx] = true;
 			break;
 		default:
 			break;
