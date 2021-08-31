@@ -1,5 +1,7 @@
 #include <systemc.h>
 #include <fstream>
+#include <sstream>
+#include <iomanip>
 
 #include "BrLite.hpp"
 
@@ -10,6 +12,8 @@ public:
 
 	SC_HAS_PROCESS(Testbench);
 	Testbench(sc_module_name _name, uint8_t _x_size, uint8_t _y_size);
+
+	~Testbench();
 private:
 	uint8_t x_size;
 	uint8_t y_size;
@@ -31,6 +35,7 @@ private:
 
 	sc_signal<uint32_t>	tick;
 
+	std::vector<std::stringstream>	lines;
 	std::ofstream log;
 
 	void timer();

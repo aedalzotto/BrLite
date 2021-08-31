@@ -1,43 +1,42 @@
 #include "Testbench.hpp"
 
-const uint16_t n_pkt = 19;
+const uint16_t n_pkt = 29;
 bool pkt_used[n_pkt] = {};
 const uint32_t packets[n_pkt][5] = {
-	// { 4, 0x40, 0x00, 0x01, SVC_ALL},
-	// {80, 0x00, 0x00, 0x2, SVC_ALL},
-	// {80, 0x30, 0x00, 0x3, SVC_ALL},
-	// {80, 0x50, 0x00, 0x4, SVC_ALL},
+	{   4, 0x40, 0x00, 0x01, SVC_ALL},
+	{  80, 0x00, 0x00, 0x02, SVC_ALL},
+	{  80, 0x30, 0x00, 0x03, SVC_ALL},
+	{  80, 0x50, 0x00, 0x04, SVC_ALL},
 
-	// {150, 0x00, 0x11, 0xAA, SVC_TGT},
-	// {200, 0x01, 0x11, 0xBB, SVC_TGT},
+	{ 150, 0x01, 0x60, 0xBA, SVC_TGT},
 
-	{250, 0x01, 0x50, 0xA8, SVC_TGT},
-	{300, 0x00, 0x50, 0xA0, SVC_TGT},
-	{350, 0x60, 0x50, 0xA6, SVC_TGT},
-	{400, 0x10, 0x50, 0xA1, SVC_TGT},
-	{410, 0x30, 0x50, 0xA3, SVC_TGT},
-	{410, 0x01, 0x50, 0xA7, SVC_TGT},
-	{420, 0x40, 0x50, 0xA4, SVC_TGT},
+	{ 250, 0x01, 0x50, 0xA8, SVC_TGT},
+	{ 300, 0x00, 0x50, 0xA0, SVC_TGT},
+	{ 350, 0x60, 0x50, 0xA6, SVC_TGT},
+	{ 400, 0x10, 0x50, 0xA1, SVC_TGT},
+	{ 410, 0x30, 0x50, 0xA3, SVC_TGT},
+	{ 410, 0x70, 0x50, 0xA7, SVC_TGT},
+	{ 420, 0x40, 0x50, 0xA4, SVC_TGT},
 
-	{500, 0x20, 0x00, 0xEE, SVC_TGT},
-	{550, 0x10, 0x00, 0xFF, SVC_TGT},
-	{650, 0x50, 0x00, 0x88, SVC_TGT},
+	{ 500, 0x20, 0x00, 0xEE, SVC_TGT},
+	{ 550, 0x10, 0x00, 0xFF, SVC_TGT},
+	{ 650, 0x50, 0x00, 0x88, SVC_TGT},
 
-	{650, 0x60, 0x40, 0x66, SVC_TGT},
-	// {680, 0x63, 0x00, 0x9F, SVC_ALL},
-	// {750, 0x30, 0x40, 0x77, SVC_ALL},
-	{770, 0x00, 0x40, 0xCA, SVC_TGT},
-	{790, 0x20, 0x40, 0xBE, SVC_TGT},
+	{ 650, 0x60, 0x40, 0x66, SVC_TGT},
+	{ 680, 0x63, 0x00, 0x9F, SVC_ALL},
+	{ 750, 0x30, 0x40, 0x77, SVC_ALL},
+	{ 770, 0x00, 0x40, 0xCA, SVC_TGT},
+	{ 790, 0x20, 0x40, 0xBE, SVC_TGT},
 
-	{850, 0x60, 0x00, 0x11, SVC_TGT},
-	// {900, 0x10, 0x70, 0x22, SVC_ALL},
-	{950, 0x01, 0x70, 0x33, SVC_TGT},
-	{950, 0x20, 0x70, 0x44, SVC_TGT},
+	{ 850, 0x60, 0x00, 0x11, SVC_TGT},
+	{ 900, 0x10, 0x70, 0x22, SVC_ALL},
+	{ 950, 0x01, 0x70, 0x33, SVC_TGT},
+	{ 950, 0x20, 0x70, 0x44, SVC_TGT},
 
 	{1100, 0x70, 0x00, 0xAF, SVC_TGT},
 	{1150, 0x40, 0x00, 0xDE, SVC_TGT},
-	// {1200, 0x01, 0x00, 0xBC, SVC_ALL},
-	// {1200, 0x50, 0x00, 0xF1, SVC_ALL},
+	{1200, 0x01, 0x00, 0xBC, SVC_ALL},
+	{1200, 0x50, 0x00, 0xF1, SVC_ALL},
 	{1300, 0x20, 0x70, 0x33, SVC_TGT},
 };
 
@@ -56,6 +55,7 @@ Testbench::Testbench(sc_module_name _name, uint8_t _x_size, uint8_t _y_size) :
 	local_busy(_x_size*_y_size),
 	msgids(_x_size*_y_size),
 	noc("NoC", _x_size, _y_size),
+	lines(_x_size*_y_size),
 	log("brNoC_log.txt")
 {
 	for(int i = 0; i < x_size*y_size; i++){
@@ -89,6 +89,14 @@ Testbench::Testbench(sc_module_name _name, uint8_t _x_size, uint8_t _y_size) :
 
 	std::cout << "---  NUMBER_PROCESSORS_X " << (int)x_size << std::endl;
 	std::cout << "---  NUMBER_PROCESSORS_Y " << (int)y_size << std::endl;
+}
+
+Testbench::~Testbench()
+{
+	for(int i = 0; i < x_size*y_size; i++){
+		log << lines[i].str();
+		log << std::endl;
+	}
 }
 
 void Testbench::timer()
@@ -140,23 +148,25 @@ void Testbench::send()
 			req_out[i] = false;
 	}
 
-	if(packets[n_pkt - 1][0] + 300 < tick)
+	if(packets[n_pkt - 1][0] + 300 < tick){
+		std::cout << "---END SIMULATION------- " << packets[n_pkt - 1][0] << std::endl;
 		sc_stop();
+	}
 }
 
 void Testbench::receive()
 {
 	for(int i = 0; i < x_size*y_size; i++){
-		if(req_in[i]){
+		if(req_in[i].event() && req_in[i]){
 			uint8_t svc = header_in[i] & 0x3;
-			log << "PE " << (i % x_size) << "x" << (i / x_size) << ": ";
+			// lines[i] << "PE " << (i % x_size) << "x" << (i / x_size) << ": ";
 			if(svc == SVC_ALL){
-				log << "ALL";
+				lines[i] << "ALL";
 			} else {
-				log << "TGT";
+				lines[i] << "TGT";
 			}
 			uint16_t src = (header_in[i] >> 10) & 0xFF;
-			log << " from " << (src >> 4) << "x" << (src & 0xF) << " " << std::hex << data_in[i] << std::dec << " t:" << tick << "\n";
+			lines[i] << " " << i << "   from: " << ((src >> 4) + (src & 0xF)*x_size) << "  " << std::hex << std::setfill('0') << std::setw(2) << data_in[i] << std::dec << std::setw(0) << "  t:" << tick << "\n";
 		}
 	}
 }
