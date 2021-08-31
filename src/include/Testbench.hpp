@@ -36,4 +36,5 @@ private:
 	void timer();
 	void send();
 	void receive();
+	void ack();
 };

@@ -17,6 +17,6 @@ int sc_main(int argc, char *argv[])
 	testbench.clock(clock);
 	testbench.reset(reset);
 
-	sc_start(2000, SC_NS);
+	sc_start(200, SC_MS);
   	return 0;
 }
