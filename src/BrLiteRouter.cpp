@@ -47,6 +47,7 @@ void BrLiteRouter::input()
 	uint8_t port;
 	uint8_t source_in;
 	uint8_t svc;
+	uint8_t in_table_idx;
 	uint16_t id_in;
 
 	switch(in_state){
@@ -88,6 +89,7 @@ void BrLiteRouter::input()
 					if(id_table == id_in && source_in == source_table){
 						// std::cout << "PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": IS IN TABLE" << std::endl;
 						is_in_table = true;
+						in_table_idx = i;
 						source_idx = i;
 						break;
 					}
@@ -113,7 +115,7 @@ void BrLiteRouter::input()
 					// std::cout << "In PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": will write in cam" << std::endl;
 					in_state = IN_WRITE;
 				}
-			} else if(is_in_table && svc == SVC_CLEAR){
+			} else if(is_in_table && svc == SVC_CLEAR && !pending_table[in_table_idx]){
 				// std::cout << "In PE " << (int)(router_address >> 4) << "x" << (int)(router_address & 0xF) << ": will erase in cam" << std::endl;
 				in_state = IN_CLEAR;
 			} else {
@@ -375,6 +377,7 @@ void BrLiteRouter::input_output()
 		wrote_local = false;
 	}
 
+	uint8_t svc;
 	switch(in_state){
 		case IN_WRITE:
 			used_table[free_idx] = 1;
@@ -389,8 +392,11 @@ void BrLiteRouter::input_output()
 			}
 			break;
 		case IN_CLEAR:
-			header_table[source_idx] = (header_table[source_idx] & 0xFFFFFFFC) | SVC_CLEAR;
-			pending_table[source_idx] = true;
+			svc = header_table[source_idx] & 0x3;
+			if(svc != SVC_CLEAR){
+				header_table[source_idx] = (header_table[source_idx] & 0xFFFFFFFC) | SVC_CLEAR;
+				pending_table[source_idx] = true;
+			}
 			break;
 		default:
 			break;
