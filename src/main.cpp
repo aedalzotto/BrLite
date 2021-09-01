@@ -1,3 +1,16 @@
+/**
+ * MA-Memphis
+ * @file main.cpp
+ * 
+ * @author Angelo Elias Dalzotto (angelo.dalzotto@edu.pucrs.br)
+ * GAPH - Hardware Design Support Group (https://corfu.pucrs.br/)
+ * PUCRS - Pontifical Catholic University of Rio Grande do Sul (http://pucrs.br/)
+ * 
+ * @date August 2021
+ * 
+ * @brief Main SystemC simulation file for Light BrNoC
+ */
+
 #include <systemc.h>
 
 #include "ClockGen.hpp"

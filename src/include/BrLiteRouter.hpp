@@ -11,11 +11,12 @@
  * @brief Light BrNoC router module -- Removed backtrack (unicast)
  */
 
+#pragma once
+
+#include <array>
 #include <systemc.h>
 
-/**
- * @todo Remove -- it is already in standards.h
- */
+/* Ports defined in standard.h */
 #define NPORT 5
 #define NORTH 2
 #define SOUTH 3
@@ -23,29 +24,14 @@
 #define WEST  1
 #define LOCAL 4
 
-static const uint8_t BRLITE_MID_SIZE = 14;
-static const uint8_t BRLITE_SRC_SIZE = 8;
-static const uint8_t BRLITE_TGT_SIZE = 8;
-static const uint8_t BRLITE_SVC_SIZE = 2;
-static const uint8_t BRLITE_HDR_SIZE =
-	BRLITE_MID_SIZE +
-	BRLITE_SRC_SIZE +
-	BRLITE_TGT_SIZE +
-	BRLITE_SVC_SIZE;
-
-static const uint8_t BRLITE_PLD_SIZE = 32;
-
-static const uint8_t BRLITE_CAM_SIZE = 8;
-
-static const uint16_t BRLITE_CLEAR_INTERVAL = 150;
-
-static const uint8_t SVC_NULL = 0x0;
-static const uint8_t SVC_CLEAR = 0x1;
-static const uint8_t SVC_ALL = 0x2;
-static const uint8_t SVC_TGT = 0x3;
-
 SC_MODULE(BrLiteRouter){
 public:
+	enum class Service : uint8_t {
+		CLEAR,
+		ALL,
+		TARGET,
+	};
+
 	/* Router signals */
 	sc_in<bool>	clock;
 	sc_in<bool>	reset;
@@ -68,6 +54,9 @@ public:
 	BrLiteRouter(sc_module_name _name, uint8_t _address);
 
 private:
+	static const uint8_t CAM_SIZE = 8;
+	static const uint16_t CLEAR_INTERVAL = 150;
+
 	enum IN_FSM {
 		IN_INIT,
 		IN_ARBITRATION,
@@ -96,11 +85,11 @@ private:
 	sc_signal<enum IN_FSM> in_state;
 	sc_signal<enum OUT_FSM> out_state;
 
-	sc_signal<bool>		used_table[BRLITE_CAM_SIZE];
-	sc_signal<bool>		pending_table[BRLITE_CAM_SIZE];
-	sc_signal<uint8_t>	input_table[BRLITE_CAM_SIZE];
-	sc_signal<uint32_t>	header_table[BRLITE_CAM_SIZE];
-	sc_signal<uint32_t>	data_table[BRLITE_CAM_SIZE];
+	sc_signal<bool>		used_table[CAM_SIZE];
+	sc_signal<bool>		pending_table[CAM_SIZE];
+	sc_signal<uint8_t>	input_table[CAM_SIZE];
+	sc_signal<uint32_t>	header_table[CAM_SIZE];
+	sc_signal<uint32_t>	data_table[CAM_SIZE];
 
 	uint8_t router_address;
 

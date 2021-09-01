@@ -8,12 +8,15 @@
  * 
  * @date August 2021
  * 
- * @brief Light BrNoC
+ * @brief Light BrNoC -- Router interconnection
  */
 
+#pragma once
+
+#include <vector>
 #include <systemc.h>
 
-#include <BrLiteRouter.hpp>
+#include "BrLiteRouter.hpp"
 
 SC_MODULE(BrLite){
 public:

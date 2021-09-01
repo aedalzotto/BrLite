@@ -8,10 +8,10 @@
  * 
  * @date August 2021
  * 
- * @brief Light BrNoC
+ * @brief Light BrNoC -- Router interconnection
  */
 
-#include <BrLite.hpp>
+#include "BrLite.hpp"
 
 BrLite::BrLite(sc_module_name _name, uint8_t _x_size, uint8_t _y_size) :
 	sc_module(_name),

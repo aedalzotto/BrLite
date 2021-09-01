@@ -1,4 +1,18 @@
+/**
+ * MA-Memphis
+ * @file Testbench.cpp
+ * 
+ * @author Angelo Elias Dalzotto (angelo.dalzotto@edu.pucrs.br)
+ * GAPH - Hardware Design Support Group (https://corfu.pucrs.br/)
+ * PUCRS - Pontifical Catholic University of Rio Grande do Sul (http://pucrs.br/)
+ * 
+ * @date August 2021
+ * 
+ * @brief Testbench for Light BrNoC
+ */
+
 #include "Testbench.hpp"
+#include "BrLiteRouter.hpp"
 
 Testbench::Testbench(sc_module_name _name, uint8_t _x_size, uint8_t _y_size) :
 	sc_module(_name),
@@ -120,9 +134,9 @@ void Testbench::receive()
 {
 	for(int i = 0; i < x_size*y_size; i++){
 		if(req_in[i].event() && req_in[i]){
-			uint8_t svc = header_in[i] & 0x3;
+			BrLiteRouter::Service svc = static_cast<BrLiteRouter::Service>(header_in[i] & 0x3);
 			// lines[i] << "PE " << (i % x_size) << "x" << (i / x_size) << ": ";
-			if(svc == SVC_ALL){
+			if(svc == BrLiteRouter::Service::ALL){
 				lines[i] << "ALL";
 			} else {
 				lines[i] << "TGT";

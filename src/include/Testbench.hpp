@@ -1,7 +1,22 @@
-#include <systemc.h>
+/**
+ * MA-Memphis
+ * @file Testbench.hpp
+ * 
+ * @author Angelo Elias Dalzotto (angelo.dalzotto@edu.pucrs.br)
+ * GAPH - Hardware Design Support Group (https://corfu.pucrs.br/)
+ * PUCRS - Pontifical Catholic University of Rio Grande do Sul (http://pucrs.br/)
+ * 
+ * @date August 2021
+ * 
+ * @brief Testbench for Light BrNoC
+ */
+
+#pragma once
+
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <systemc.h>
 
 #include "BrLite.hpp"
 
