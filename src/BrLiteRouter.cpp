@@ -393,7 +393,7 @@ void BrLiteRouter::input_output()
 			break;
 		case IN_CLEAR:
 			svc = header_table[source_idx] & 0x3;
-			if(svc != SVC_CLEAR){
+			if(svc != SVC_CLEAR && !pending_table[source_idx]){
 				header_table[source_idx] = (header_table[source_idx] & 0xFFFFFFFC) | SVC_CLEAR;
 				pending_table[source_idx] = true;
 			}
