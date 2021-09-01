@@ -5,6 +5,8 @@
 
 #include "BrLite.hpp"
 
+#include "../../scenario.h"
+
 SC_MODULE(Testbench){
 public:
 	sc_in<bool> clock;
@@ -37,6 +39,7 @@ private:
 
 	std::vector<std::stringstream>	lines;
 	std::ofstream log;
+	bool pkt_used[N_PKT];
 
 	void timer();
 	void send();

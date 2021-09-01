@@ -1,45 +1,5 @@
 #include "Testbench.hpp"
 
-const uint16_t n_pkt = 29;
-bool pkt_used[n_pkt] = {};
-const uint32_t packets[n_pkt][5] = {
-	{   4, 0x40, 0x00, 0x01, SVC_ALL},
-	{  80, 0x00, 0x00, 0x02, SVC_ALL},
-	{  80, 0x30, 0x00, 0x03, SVC_ALL},
-	{  80, 0x50, 0x00, 0x04, SVC_ALL},
-
-	{ 150, 0x01, 0x60, 0xBA, SVC_TGT},
-
-	{ 250, 0x01, 0x50, 0xA8, SVC_TGT},
-	{ 300, 0x00, 0x50, 0xA0, SVC_TGT},
-	{ 350, 0x60, 0x50, 0xA6, SVC_TGT},
-	{ 400, 0x10, 0x50, 0xA1, SVC_TGT},
-	{ 410, 0x30, 0x50, 0xA3, SVC_TGT},
-	{ 410, 0x70, 0x50, 0xA7, SVC_TGT},
-	{ 420, 0x40, 0x50, 0xA4, SVC_TGT},
-
-	{ 500, 0x20, 0x00, 0xEE, SVC_TGT},
-	{ 550, 0x10, 0x00, 0xFF, SVC_TGT},
-	{ 650, 0x50, 0x00, 0x88, SVC_TGT},
-
-	{ 650, 0x60, 0x40, 0x66, SVC_TGT},
-	{ 680, 0x63, 0x00, 0x9F, SVC_ALL},
-	{ 750, 0x30, 0x40, 0x77, SVC_ALL},
-	{ 770, 0x00, 0x40, 0xCA, SVC_TGT},
-	{ 790, 0x20, 0x40, 0xBE, SVC_TGT},
-
-	{ 850, 0x60, 0x00, 0x11, SVC_TGT},
-	{ 900, 0x10, 0x70, 0x22, SVC_ALL},
-	{ 950, 0x01, 0x70, 0x33, SVC_TGT},
-	{ 950, 0x20, 0x70, 0x44, SVC_TGT},
-
-	{1100, 0x70, 0x00, 0xAF, SVC_TGT},
-	{1150, 0x40, 0x00, 0xDE, SVC_TGT},
-	{1200, 0x01, 0x00, 0xBC, SVC_ALL},
-	{1200, 0x50, 0x00, 0xF1, SVC_ALL},
-	{1300, 0x20, 0x70, 0x33, SVC_TGT},
-};
-
 Testbench::Testbench(sc_module_name _name, uint8_t _x_size, uint8_t _y_size) :
 	sc_module(_name),
 	x_size(_x_size),
@@ -116,30 +76,32 @@ void Testbench::send()
 			req_out[i] = 0;
 			msgids[i] = 0;
 		}
-		for(int i = 0; i < n_pkt; i++)
+		for(int i = 0; i < N_PKT; i++)
 			pkt_used[i] = false;
 		return;
 	}
 
-	for(int i = 0; i < n_pkt; i++){
-		uint32_t timestamp = packets[i][0];
-		uint8_t src = packets[i][1];
-		uint8_t src_idx = (src >> 4) + (src & 0xF)*x_size;
-		if(tick >= timestamp && !pkt_used[i] && !local_busy[src_idx]){
-			req_out[src_idx] = true;
-			data_out[src_idx] = packets[i][3];
+	for(int i = 0; i < N_PKT; i++){
+		uint32_t timestamp = PACKETS[i][0];
+		uint8_t src = PACKETS[i][1];
+		if(tick >= timestamp && !pkt_used[i] && !local_busy[src]){
+			req_out[src] = true;
+			data_out[src] = PACKETS[i][3];
 			uint32_t header = 0;
-			header |= (msgids[src_idx] << 18);
-			msgids[src_idx]++;
-			header |= ((src & 0xFF) << 10);
-			header |= ((packets[i][2] & 0xFF) << 2);
-			header |= (packets[i][4] & 0x3);
-			header_out[src_idx] = header;
+			header |= (msgids[src] << 18);
+			msgids[src]++;
+			header |= ((((src % x_size) << 4) | (src / x_size)) << 10);
+
+			uint8_t tgt = PACKETS[i][2];
+			header |= ((((tgt % x_size) << 4) | (tgt / x_size)) << 2);
+
+			header |= (PACKETS[i][4] & 0x3);
+			header_out[src] = header;
 			pkt_used[i] = true;
 			std::cout << "-----------------------------------------  INSERT SERVICE " <<
-				(int)src << " " << packets[i][2] << " " <<
-				packets[i][3] << " " <<
-				(packets[i][4] & 0x3) << std::endl;
+				(int)src << " " << PACKETS[i][2] << " " <<
+				PACKETS[i][3] << " " <<
+				(PACKETS[i][4] & 0x3) << std::endl;
 		}
 	}
 
@@ -148,8 +110,8 @@ void Testbench::send()
 			req_out[i] = false;
 	}
 
-	if(packets[n_pkt - 1][0] + 300 < tick){
-		std::cout << "---END SIMULATION------- " << packets[n_pkt - 1][0] << std::endl;
+	if(PACKETS[N_PKT - 1][0] + 300 < tick){
+		std::cout << "---END SIMULATION------- " << PACKETS[N_PKT - 1][0] << std::endl;
 		sc_stop();
 	}
 }
@@ -166,7 +128,7 @@ void Testbench::receive()
 				lines[i] << "TGT";
 			}
 			uint16_t src = (header_in[i] >> 10) & 0xFF;
-			lines[i] << " " << i << "   from: " << ((src >> 4) + (src & 0xF)*x_size) << "  " << std::hex << std::setfill('0') << std::setw(2) << data_in[i] << std::dec << std::setw(0) << "  t:" << tick << "\n";
+			lines[i] << " " << i << "   from: " << ((src >> 4) + (src & 0xF)*x_size) << "  " << std::hex << std::uppercase << std::setfill('0') << std::setw(2) << data_in[i] << std::dec << std::setw(0) << "  t:" << tick << "\n";
 		}
 	}
 }
@@ -174,7 +136,7 @@ void Testbench::receive()
 void Testbench::ack()
 {
 	while(true){
-		wait(20, SC_NS);
+		wait(10, SC_NS);
 		if(reset){
 			for(int i = 0; i < x_size*y_size; i++)
 				ack_out[i] = 0;

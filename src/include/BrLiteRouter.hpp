@@ -37,7 +37,7 @@ static const uint8_t BRLITE_PLD_SIZE = 32;
 
 static const uint8_t BRLITE_CAM_SIZE = 8;
 
-static const uint16_t BRLITE_CLEAR_INTERVAL = 180;
+static const uint16_t BRLITE_CLEAR_INTERVAL = 150;
 
 static const uint8_t SVC_NULL = 0x0;
 static const uint8_t SVC_CLEAR = 0x1;
