@@ -74,6 +74,15 @@ private:
 	static const uint8_t CAM_SIZE = 8;
 	static const uint16_t CLEAR_INTERVAL = 150;
 
+	typedef struct _table {
+		sc_signal<bool>		used;
+		sc_signal<bool>		pending;
+		sc_signal<uint8_t>	origin;
+		sc_signal<uint8_t>	id_svc;
+		sc_signal<uint32_t>	address;
+		sc_signal<uint32_t>	payload;
+	} table_t;
+
 	enum IN_FSM {
 		IN_INIT,
 		IN_ARBITRATION,
@@ -102,12 +111,7 @@ private:
 	sc_signal<enum IN_FSM>	in_state;
 	sc_signal<enum OUT_FSM> out_state;
 
-	sc_signal<bool>		used_table[CAM_SIZE];
-	sc_signal<bool>		pending_table[CAM_SIZE];
-	sc_signal<uint8_t>	input_table[CAM_SIZE];
-	sc_signal<uint8_t>	id_svc_table[CAM_SIZE];
-	sc_signal<uint32_t>	address_table[CAM_SIZE];
-	sc_signal<uint32_t>	payload_table[CAM_SIZE];
+	table_t table[CAM_SIZE];
 
 	uint16_t router_address;
 

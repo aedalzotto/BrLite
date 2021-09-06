@@ -80,9 +80,9 @@ void BrLiteRouter::input()
 			source_in = SOURCE(address_in[selected_port]);
 			id_in = ID(id_svc_in[selected_port]);
 			for(int i = 0; i < CAM_SIZE; i++){
-				if(used_table[i]){
-					uint16_t source_table = SOURCE(address_table[i]);
-					uint8_t id_table = ID(id_svc_table[i]);
+				if(table[i].used){
+					uint16_t source_table = SOURCE(table[i].address);
+					uint8_t id_table = ID(table[i].id_svc);
 
 					if(id_table == id_in && source_in == source_table){
 						// std::cout << "PE " << (int)(router_address >> 8) << "x" << (int)(router_address & 0xFF) << ": IS IN TABLE" << std::endl;
@@ -99,7 +99,7 @@ void BrLiteRouter::input()
 				/* Message not in CAM */
 				bool table_full = true;
 				for(int i = 0; i < CAM_SIZE; i++){
-					if(!used_table[i]){
+					if(!table[i].used){
 						table_full = false;
 						free_idx = i;
 						break;
@@ -113,7 +113,7 @@ void BrLiteRouter::input()
 					// std::cout << "In PE " << (int)(router_address >> 8) << "x" << (int)(router_address & 0xFF) << ": will write in cam" << std::endl;
 					in_state = IN_WRITE;
 				}
-			} else if(is_in_table && svc == Service::CLEAR && !pending_table[in_table_idx]){
+			} else if(is_in_table && svc == Service::CLEAR && !table[in_table_idx].pending){
 				// std::cout << "In PE " << (int)(router_address >> 8) << "x" << (int)(router_address & 0xFF) << ": will erase in cam" << std::endl;
 				in_state = IN_CLEAR;
 			} else {
@@ -130,9 +130,9 @@ void BrLiteRouter::input()
 			}
 			break;
 		case IN_WRITE:
-			payload_table[free_idx] = payload_in[selected_port];
-			address_table[free_idx] = address_in[selected_port];
-			input_table[free_idx] = selected_port;
+			table[free_idx].payload = payload_in[selected_port];
+			table[free_idx].address = address_in[selected_port];
+			table[free_idx].origin = selected_port;
 
 			ack_out[selected_port] = true;
 
@@ -170,7 +170,7 @@ void BrLiteRouter::output()
 			if(!clear_local){
 				bool has_pending = false;
 				for(int i = 0; i < CAM_SIZE; i++){
-					if(used_table[i] && pending_table[i]){
+					if(table[i].used && table[i].pending){
 						has_pending = true;
 						break;
 					}
@@ -185,7 +185,7 @@ void BrLiteRouter::output()
 		case OUT_ARBITRATION:
 			line = (selected_line + 1) % CAM_SIZE;
 			while(line != selected_line){
-				if(used_table[line] && pending_table[line]){
+				if(table[line].used && table[line].pending){
 					selected_line = line;
 					break;
 				}
@@ -196,29 +196,29 @@ void BrLiteRouter::output()
 			out_state = OUT_TEST_SVC;
 			break;
 		case OUT_TEST_SVC:
-			svc = SERVICE(id_svc_table[selected_line]);
-			target = TARGET(address_table[selected_line]);
+			svc = SERVICE(table[selected_line].id_svc);
+			target = TARGET(table[selected_line].address);
 			// std::cout << "Out PE " << (int)(router_address >> 8) << "x" << (int)(router_address & 0xFF) << ": target is " << (int)target << std::endl;
 
 			if(svc == Service::CLEAR || svc == Service::ALL || (svc == Service::TARGET && target != router_address)){
 				/* Propagate */
 				for(int i = 0; i < NPORT - 1; i++){
-					if(i != input_table[selected_line]){
+					if(i != table[selected_line].origin){
 						req_out[i] = true;
-						id_svc_out[i] = id_svc_table[selected_line];
-						address_out[i] = address_table[selected_line];
-						payload_out[i] = payload_table[selected_line];
+						id_svc_out[i] = table[selected_line].id_svc;
+						address_out[i] = table[selected_line].address;
+						payload_out[i] = table[selected_line].payload;
 					} else {
 						ack_ports[i] = true;	/* Ack on the port the packet has entered */
 					}
 				}
 
-				uint16_t source = SOURCE(address_table[selected_line]);
+				uint16_t source = SOURCE(table[selected_line].address);
 				if((svc == Service::ALL && source != router_address) || (svc == Service::TARGET && target == router_address)){
 					req_out[LOCAL] = true;
-					id_svc_out[LOCAL] = id_svc_table[selected_line];
-					address_out[LOCAL] = address_table[selected_line];
-					payload_out[LOCAL] = payload_table[selected_line];
+					id_svc_out[LOCAL] = table[selected_line].id_svc;
+					address_out[LOCAL] = table[selected_line].address;
+					payload_out[LOCAL] = table[selected_line].payload;
 				} else {
 					ack_ports[LOCAL] = true;
 				}
@@ -227,9 +227,9 @@ void BrLiteRouter::output()
 				out_state = OUT_WAIT_ACK_PORTS;
 			} else if(svc == Service::TARGET && target == router_address){
 				req_out[LOCAL] = true;
-				id_svc_out[LOCAL] = id_svc_table[selected_line];
-				address_out[LOCAL] = address_table[selected_line];
-				payload_out[LOCAL] = payload_table[selected_line];
+				id_svc_out[LOCAL] = table[selected_line].id_svc;
+				address_out[LOCAL] = table[selected_line].address;
+				payload_out[LOCAL] = table[selected_line].payload;
 				
 				// std::cout << "Out PE " << (int)(router_address >> 8) << "x" << (int)(router_address & 0xFF) << ": sent local" << std::endl;
 				out_state = OUT_SEND_LOCAL;
@@ -240,18 +240,18 @@ void BrLiteRouter::output()
 			break;
 		case OUT_SEND_LOCAL:
 			if(ack_in[LOCAL]){
-				uint16_t source = SOURCE(address_table[selected_line]);
+				uint16_t source = SOURCE(table[selected_line].address);
 				uint8_t src_x = source >> 8;
 				uint8_t src_y = source & 0xFF;
-				uint16_t target = TARGET(address_table[selected_line]);
+				uint16_t target = TARGET(table[selected_line].address);
 				uint8_t tgt_x = target >> 8;
 				uint8_t tgt_y = target & 0xFF;
-				uint8_t svc = id_svc_table[selected_line] & 0x3;
+				uint8_t svc = table[selected_line].id_svc & 0x3;
 				std::cout << ">>>>>>>>>>>>>>>>> SEND LOCAL: [[" << 
 					(int)src_x << " " << (int)src_y << " " <<
 					(int)tgt_x << " " << (int)tgt_y << "]] " << 
 					(int)svc << " " <<
-					payload_table[selected_line] << " " <<
+					table[selected_line].payload << " " <<
 					"Address: " << (int)router_address << 
 					std::endl;
 			}
@@ -277,7 +277,7 @@ void BrLiteRouter::output()
 			if(ack){
 				ack_ports.fill(false);
 
-				svc = SERVICE(id_svc_table[selected_line]);
+				svc = SERVICE(table[selected_line].id_svc);
 				if(svc == Service::CLEAR){
 					// std::cout << "Out PE " << (int)(router_address >> 8) << "x" << (int)(router_address & 0xFF) << ": ports acked. clearing now" << std::endl;
 					out_state = OUT_CLEAR_TABLE;
@@ -295,20 +295,20 @@ void BrLiteRouter::output()
 			
 			break;
 		case OUT_CLEAR_TABLE:
-			target = TARGET(address_table[selected_line]);
+			target = TARGET(table[selected_line].address);
 			if(target == router_address){
-				uint16_t source = SOURCE(address_table[selected_line]);
+				uint16_t source = SOURCE(table[selected_line].address);
 				uint8_t src_x = source >> 8;
 				uint8_t src_y = source & 0xFF;
 				uint8_t tgt_x = target >> 8;
 				uint8_t tgt_y = target & 0xFF;
-				uint8_t svc = id_svc_table[selected_line] & 0x3;
+				uint8_t svc = table[selected_line].id_svc & 0x3;
 
 				std::cout << ">>>>>>>>>>>>>>>>> end CLEAR:  [[" << 
 					(int)src_x << " " << (int)src_y << " " <<
 					(int)tgt_x << " " << (int)tgt_y << "]] " << 
 					(int)svc << " " <<
-					payload_table[selected_line] <<
+					table[selected_line].payload <<
 					std::endl;
 			}
 
@@ -323,8 +323,8 @@ void BrLiteRouter::input_output()
 {
 	if(reset){
 		for(int i = 0; i < CAM_SIZE; i++){
-			pending_table[i] = false;
-			used_table[i] = false;
+			table[i].pending = false;
+			table[i].used = false;
 		}
 
 		current_tick = 0;
@@ -343,8 +343,8 @@ void BrLiteRouter::input_output()
 	if(clear_local && in_state == IN_INIT && out_state == OUT_INIT){
 		clear_local = false;
 		local_busy = false;
-		id_svc_table[wrote_idx] = (id_svc_table[wrote_idx] & 0xFC) | static_cast<uint8_t>(Service::CLEAR);
-		pending_table[wrote_idx] = true;
+		table[wrote_idx].id_svc = (table[wrote_idx].id_svc & 0xFC) | static_cast<uint8_t>(Service::CLEAR);
+		table[wrote_idx].pending = true;
 		// std::cout << "PE " << (int)(router_address >> 8) << "x" << (int)(router_address & 0xFF) << ": triggering a clear" << std::endl;
 	}
 
@@ -357,9 +357,9 @@ void BrLiteRouter::input_output()
 	Service svc;
 	switch(in_state){
 		case IN_WRITE:
-			used_table[free_idx] = true;
-			pending_table[free_idx] = true;
-			id_svc_table[free_idx] = id_svc_in[selected_port];
+			table[free_idx].used = true;
+			table[free_idx].pending = true;
+			table[free_idx].id_svc = id_svc_in[selected_port];
 			if(selected_port == LOCAL){
 				// std::cout << "PE " << (int)(router_address >> 8) << "x" << (int)(router_address & 0xFF) << ": detected local write" << std::endl;
 				local_busy = true;
@@ -369,10 +369,10 @@ void BrLiteRouter::input_output()
 			}
 			break;
 		case IN_CLEAR:
-			svc = SERVICE(id_svc_table[source_idx]);
-			if(svc != Service::CLEAR && !pending_table[source_idx]){
-				id_svc_table[source_idx] = (id_svc_table[source_idx] & 0xFC) | static_cast<uint8_t>(Service::CLEAR);
-				pending_table[source_idx] = true;
+			svc = SERVICE(table[source_idx].id_svc);
+			if(svc != Service::CLEAR && !table[source_idx].pending){
+				table[source_idx].id_svc = (table[source_idx].id_svc & 0xFC) | static_cast<uint8_t>(Service::CLEAR);
+				table[source_idx].pending = true;
 			}
 			break;
 		default:
@@ -381,10 +381,10 @@ void BrLiteRouter::input_output()
 
 	switch(out_state){
 		case OUT_TEST_SVC:
-			pending_table[selected_line] = false;
+			table[selected_line].pending = false;
 			break;
 		case OUT_CLEAR_TABLE:
-			used_table[selected_line] = false;
+			table[selected_line].used = false;
 			break;
 		default:
 			break;
