@@ -141,8 +141,7 @@ void Testbench::receive()
 {
 	for(int i = 0; i < x_size*y_size; i++){
 		if(req_in[i].event() && req_in[i]){
-			BrLiteRouter::Service svc = static_cast<BrLiteRouter::Service>(id_svc_in[i] & 0x3);
-			// lines[i] << "PE " << (i % x_size) << "x" << (i / x_size) << ": ";
+			BrLiteRouter::Service svc = BrLiteRouter::SERVICE(id_svc_in[i]);
 			if(svc == BrLiteRouter::Service::ALL){
 				lines[i] << "ALL";
 			} else {

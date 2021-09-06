@@ -16,21 +16,36 @@
 #include <array>
 #include <systemc.h>
 
-/* Ports defined in standard.h */
-#define NPORT 5
-#define NORTH 2
-#define SOUTH 3
-#define EAST  0
-#define WEST  1
-#define LOCAL 4
+#include "standards.h"
 
 SC_MODULE(BrLiteRouter){
 public:
 	enum class Service : uint8_t {
-		CLEAR,
-		ALL,
+		INVALID,
 		TARGET,
+		ALL,
+		CLEAR
 	};
+
+	static constexpr uint16_t SOURCE(uint32_t address)
+	{
+		return address >> 16;
+	}
+
+	static constexpr uint16_t TARGET(uint32_t address)
+	{
+		return address;
+	}
+
+	static constexpr uint8_t ID(uint8_t id_svc)
+	{
+		return id_svc >> 2;
+	}
+
+	static constexpr Service SERVICE(uint8_t id_svc)
+	{
+		return static_cast<Service>(id_svc & 0x3);
+	}
 
 	/* Router signals */
 	sc_in<bool>	clock;
