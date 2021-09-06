@@ -25,13 +25,15 @@ public:
 
 	std::vector<sc_in<bool>> ack_in;
 	std::vector<sc_in<bool>> req_in;
-	std::vector<sc_in<uint32_t>> data_in;
-	std::vector<sc_in<uint32_t>> header_in;
+	std::vector<sc_in<uint32_t>> payload_in;
+	std::vector<sc_in<uint32_t>> address_in;
+	std::vector<sc_in<uint8_t>> id_svc_in;
 
 	std::vector<sc_out<bool>> ack_out;
 	std::vector<sc_out<bool>> req_out;
-	std::vector<sc_out<uint32_t>> data_out;
-	std::vector<sc_out<uint32_t>> header_out;
+	std::vector<sc_out<uint32_t>> payload_out;
+	std::vector<sc_out<uint32_t>> address_out;
+	std::vector<sc_out<uint8_t>> id_svc_out;
 
 	std::vector<sc_out<bool>> local_busy;
 
@@ -41,13 +43,15 @@ public:
 private:
 	std::vector<BrLiteRouter*> routers;
 
-	std::vector<std::array<sc_signal<uint32_t>, NPORT - 1>> data_in_sig;
-	std::vector<std::array<sc_signal<uint32_t>, NPORT - 1>> header_in_sig;
+	std::vector<std::array<sc_signal<uint32_t>, NPORT - 1>> payload_in_sig;
+	std::vector<std::array<sc_signal<uint32_t>, NPORT - 1>> address_in_sig;
+	std::vector<std::array<sc_signal<uint8_t>, NPORT - 1>> id_svc_in_sig;
 	std::vector<std::array<sc_signal<bool>, NPORT - 1>> 	req_in_sig;
 	std::vector<std::array<sc_signal<bool>, NPORT - 1>> 	ack_out_sig;
 
-	std::vector<std::array<sc_signal<uint32_t>, NPORT - 1>> data_out_sig;
-	std::vector<std::array<sc_signal<uint32_t>, NPORT - 1>> header_out_sig;
+	std::vector<std::array<sc_signal<uint32_t>, NPORT - 1>> payload_out_sig;
+	std::vector<std::array<sc_signal<uint32_t>, NPORT - 1>> address_out_sig;
+	std::vector<std::array<sc_signal<uint8_t>, NPORT - 1>> id_svc_out_sig;
 	std::vector<std::array<sc_signal<bool>, NPORT - 1>> 	req_out_sig;
 	std::vector<std::array<sc_signal<bool>, NPORT - 1>> 	ack_in_sig;
 

@@ -37,21 +37,23 @@ public:
 	sc_in<bool>	reset;
 
 	/* Data Inputs */
-	sc_in<uint32_t>		data_in[NPORT];
-	sc_in<uint32_t>		header_in[NPORT];
+	sc_in<uint32_t>		payload_in[NPORT];
+	sc_in<uint32_t>		address_in[NPORT];
+	sc_in<uint8_t>		id_svc_in[NPORT];
 	sc_in<bool>			req_in[NPORT];
 	sc_out<bool>		ack_out[NPORT];
 
 	/* Data Outputs */
-	sc_out<uint32_t>	data_out[NPORT];
-	sc_out<uint32_t>	header_out[NPORT];
+	sc_out<uint32_t>	payload_out[NPORT];
+	sc_out<uint32_t>	address_out[NPORT];
+	sc_out<uint8_t>		id_svc_out[NPORT];
 	sc_out<bool>		req_out[NPORT];
 	sc_in<bool>			ack_in[NPORT];
 
 	sc_out<bool> local_busy;
 
 	SC_HAS_PROCESS(BrLiteRouter);
-	BrLiteRouter(sc_module_name _name, uint8_t _address);
+	BrLiteRouter(sc_module_name _name, uint16_t _address);
 
 private:
 	static const uint8_t CAM_SIZE = 8;
@@ -82,16 +84,17 @@ private:
 	sc_signal<uint8_t>	free_idx;
 	sc_signal<bool>		clear_local;
 
-	sc_signal<enum IN_FSM> in_state;
+	sc_signal<enum IN_FSM>	in_state;
 	sc_signal<enum OUT_FSM> out_state;
 
 	sc_signal<bool>		used_table[CAM_SIZE];
 	sc_signal<bool>		pending_table[CAM_SIZE];
 	sc_signal<uint8_t>	input_table[CAM_SIZE];
-	sc_signal<uint32_t>	header_table[CAM_SIZE];
-	sc_signal<uint32_t>	data_table[CAM_SIZE];
+	sc_signal<uint8_t>	id_svc_table[CAM_SIZE];
+	sc_signal<uint32_t>	address_table[CAM_SIZE];
+	sc_signal<uint32_t>	payload_table[CAM_SIZE];
 
-	uint8_t router_address;
+	uint16_t router_address;
 
 	std::array<bool,	NPORT>	ack_ports;
 	bool wrote_local;

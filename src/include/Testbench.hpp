@@ -37,16 +37,18 @@ private:
 
 	std::vector<sc_signal<bool>> ack_out;
 	std::vector<sc_signal<bool>> req_in;
-	std::vector<sc_signal<uint32_t>> data_in;
-	std::vector<sc_signal<uint32_t>> header_in;
+	std::vector<sc_signal<uint32_t>> payload_in;
+	std::vector<sc_signal<uint32_t>> address_in;
+	std::vector<sc_signal<uint8_t>> id_svc_in;
 
 	std::vector<sc_signal<bool>> ack_in;
 	std::vector<sc_signal<bool>> req_out;
-	std::vector<sc_signal<uint32_t>> data_out;
-	std::vector<sc_signal<uint32_t>> header_out;
+	std::vector<sc_signal<uint32_t>> payload_out;
+	std::vector<sc_signal<uint32_t>> address_out;
+	std::vector<sc_signal<uint8_t>> id_svc_out;
 
 	std::vector<sc_signal<bool>> local_busy;
-	std::vector<uint16_t>	msgids;
+	std::vector<uint8_t>	msgids;
 
 	BrLite noc;
 

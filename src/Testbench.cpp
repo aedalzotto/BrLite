@@ -20,12 +20,14 @@ Testbench::Testbench(sc_module_name _name, uint8_t _x_size, uint8_t _y_size) :
 	y_size(_y_size),
 	ack_out(_x_size*_y_size),
 	req_in(_x_size*_y_size),
-	data_in(_x_size*_y_size),
-	header_in(_x_size*_y_size),
+	payload_in(_x_size*_y_size),
+	address_in(_x_size*_y_size),
+	id_svc_in(_x_size*_y_size),
 	ack_in(_x_size*_y_size),
 	req_out(_x_size*_y_size),
-	data_out(_x_size*_y_size),
-	header_out(_x_size*_y_size),
+	payload_out(_x_size*_y_size),
+	address_out(_x_size*_y_size),
+	id_svc_out(_x_size*_y_size),
 	local_busy(_x_size*_y_size),
 	msgids(_x_size*_y_size),
 	noc("NoC", _x_size, _y_size),
@@ -35,13 +37,15 @@ Testbench::Testbench(sc_module_name _name, uint8_t _x_size, uint8_t _y_size) :
 	for(int i = 0; i < x_size*y_size; i++){
 		noc.ack_in[i](ack_out[i]);
 		noc.req_out[i](req_in[i]);
-		noc.data_out[i](data_in[i]);
-		noc.header_out[i](header_in[i]);
+		noc.payload_out[i](payload_in[i]);
+		noc.address_out[i](address_in[i]);
+		noc.id_svc_out[i](id_svc_in[i]);
 
 		noc.ack_out[i](ack_in[i]);
 		noc.req_in[i](req_out[i]);
-		noc.data_in[i](data_out[i]);
-		noc.header_in[i](header_out[i]);
+		noc.payload_in[i](payload_out[i]);
+		noc.address_in[i](address_out[i]);
+		noc.id_svc_in[i](id_svc_out[i]);
 		noc.local_busy[i](local_busy[i]);
 	}
 
@@ -97,20 +101,23 @@ void Testbench::send()
 
 	for(int i = 0; i < N_PKT; i++){
 		uint32_t timestamp = PACKETS[i][0];
-		uint8_t src = PACKETS[i][1];
+		uint16_t src = PACKETS[i][1];
 		if(tick >= timestamp && !pkt_used[i] && !local_busy[src]){
 			req_out[src] = true;
-			data_out[src] = PACKETS[i][3];
-			uint32_t header = 0;
-			header |= (msgids[src] << 18);
+			payload_out[src] = PACKETS[i][3];
+			uint32_t address = 0;
+			address |= ((((src % x_size) << 8) | (src / x_size)) << 16);
+			uint16_t tgt = PACKETS[i][2];
+			address |= ((((tgt % x_size) << 8) | (tgt / x_size)));
+			address_out[src] = address;
+
+			uint8_t id_svc = 0;
+			id_svc |= (msgids[src] << 2);
+			id_svc |= (PACKETS[i][4] & 0x3);
+			id_svc_out[src] = id_svc;
 			msgids[src]++;
-			header |= ((((src % x_size) << 4) | (src / x_size)) << 10);
+			msgids[src] %= 0x3F;
 
-			uint8_t tgt = PACKETS[i][2];
-			header |= ((((tgt % x_size) << 4) | (tgt / x_size)) << 2);
-
-			header |= (PACKETS[i][4] & 0x3);
-			header_out[src] = header;
 			pkt_used[i] = true;
 			std::cout << "-----------------------------------------  INSERT SERVICE " <<
 				(int)src << " " << PACKETS[i][2] << " " <<
@@ -125,7 +132,7 @@ void Testbench::send()
 	}
 
 	if(PACKETS[N_PKT - 1][0] + 300 < tick){
-		std::cout << "---END SIMULATION------- " << PACKETS[N_PKT - 1][0] << std::endl;
+		std::cout << "---END SIMULATION------- " << std::dec << PACKETS[N_PKT - 1][0] << std::endl;
 		sc_stop();
 	}
 }
@@ -134,15 +141,15 @@ void Testbench::receive()
 {
 	for(int i = 0; i < x_size*y_size; i++){
 		if(req_in[i].event() && req_in[i]){
-			BrLiteRouter::Service svc = static_cast<BrLiteRouter::Service>(header_in[i] & 0x3);
+			BrLiteRouter::Service svc = static_cast<BrLiteRouter::Service>(id_svc_in[i] & 0x3);
 			// lines[i] << "PE " << (i % x_size) << "x" << (i / x_size) << ": ";
 			if(svc == BrLiteRouter::Service::ALL){
 				lines[i] << "ALL";
 			} else {
 				lines[i] << "TGT";
 			}
-			uint16_t src = (header_in[i] >> 10) & 0xFF;
-			lines[i] << " " << i << "   from: " << ((src >> 4) + (src & 0xF)*x_size) << "  " << std::hex << std::uppercase << std::setfill('0') << std::setw(2) << data_in[i] << std::dec << std::setw(0) << "  t:" << tick << "\n";
+			uint16_t src = (address_in[i] >> 16);
+			lines[i] << " " << i << "   from: " << ((src >> 8) + (src & 0xFF)*x_size) << "  " << std::hex << std::uppercase << std::setfill('0') << std::setw(2) << payload_in[i] << std::dec << std::setw(0) << "  t:" << tick << "\n";
 		}
 	}
 }
