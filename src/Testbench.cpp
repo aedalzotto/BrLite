@@ -147,7 +147,7 @@ void Testbench::receive()
 			} else {
 				lines[i] << "TGT";
 			}
-			uint16_t src = (address_in[i] >> 16);
+			uint16_t src = BrLiteRouter::SOURCE(address_in[i]);
 			lines[i] << " " << i << "   from: " << ((src >> 8) + (src & 0xFF)*x_size) << "  " << std::hex << std::uppercase << std::setfill('0') << std::setw(2) << payload_in[i] << std::dec << std::setw(0) << "  t:" << tick << "\n";
 		}
 	}
