@@ -41,15 +41,9 @@ void BrLiteRouter::input()
 		return;
 	}
 
-	bool is_in_table;
-	uint8_t port;
-	uint16_t source_in;
-	Service svc;
-	uint8_t in_table_idx;
-	uint8_t id_in;
-
 	switch(in_state){
 		case IN_INIT:
+		{
 			if(!clear_local){
 				bool has_request = false;
 				for(int i = 0; i < NPORT; i++)
@@ -61,8 +55,10 @@ void BrLiteRouter::input()
 				}
 			}
 			break;
+		}
 		case IN_ARBITRATION:
-			port = (selected_port + 1) % NPORT;
+		{
+			uint8_t port = (selected_port + 1) % NPORT;
 			while(port != selected_port){
 				if(req_in[port]){
 					selected_port = port;
@@ -75,10 +71,13 @@ void BrLiteRouter::input()
 
 			in_state = IN_TEST_SPACE;
 			break;
+		}
 		case IN_TEST_SPACE:
-			is_in_table = false;
-			source_in = SOURCE(address_in[selected_port]);
-			id_in = ID(id_svc_in[selected_port]);
+		{
+			bool is_in_table = false;
+			uint16_t source_in = SOURCE(address_in[selected_port]);
+			uint8_t id_in = ID(id_svc_in[selected_port]);
+			uint8_t in_table_idx = 0;
 			for(int i = 0; i < CAM_SIZE; i++){
 				if(table[i].used){
 					uint16_t source_table = SOURCE(table[i].address);
@@ -94,7 +93,7 @@ void BrLiteRouter::input()
 				}
 			}
 
-			svc = SERVICE(id_svc_in[selected_port]);
+			Service svc = SERVICE(id_svc_in[selected_port]);
 			if(!is_in_table && (svc == Service::TARGET || svc == Service::ALL)){
 				/* Message not in CAM */
 				bool table_full = true;
@@ -122,14 +121,18 @@ void BrLiteRouter::input()
 				in_state = IN_WAIT_REQ_DOWN;
 			}
 			break;
+		}
 		case IN_WAIT_REQ_DOWN:
+		{
 			if(!req_in[selected_port]){
 				// std::cout << "In PE " << (int)(router_address >> 8) << "x" << (int)(router_address & 0xFF) << ": acked down " << std::endl;
 				ack_out[selected_port] = false;
 				in_state = IN_INIT;
 			}
 			break;
+		}
 		case IN_WRITE:
+		{
 			table[free_idx].payload = payload_in[selected_port];
 			table[free_idx].address = address_in[selected_port];
 			table[free_idx].origin = selected_port;
@@ -140,11 +143,14 @@ void BrLiteRouter::input()
 
 			in_state = IN_WAIT_REQ_DOWN;
 			break;
+		}
 		case IN_CLEAR:
+		{
 			ack_out[selected_port] = true;
 			// std::cout << "In PE " << (int)(router_address >> 8) << "x" << (int)(router_address & 0xFF) << ": acked clear " << std::endl;
 			in_state = IN_WAIT_REQ_DOWN;
 			break;
+		}
 	}
 }
 
@@ -160,13 +166,9 @@ void BrLiteRouter::output()
 		return;
 	}
 
-	uint8_t line;
-	Service svc;
-	uint16_t target;
-	bool ack;
-
 	switch(out_state){
 		case OUT_INIT:
+		{
 			if(!clear_local){
 				bool has_pending = false;
 				for(int i = 0; i < CAM_SIZE; i++){
@@ -182,8 +184,10 @@ void BrLiteRouter::output()
 				}
 			}
 			break;
+		}
 		case OUT_ARBITRATION:
-			line = (selected_line + 1) % CAM_SIZE;
+		{
+			uint8_t line = (selected_line + 1) % CAM_SIZE;
 			while(line != selected_line){
 				if(table[line].used && table[line].pending){
 					selected_line = line;
@@ -195,9 +199,11 @@ void BrLiteRouter::output()
 			// std::cout << "Out PE " << (int)(router_address >> 8) << "x" << (int)(router_address & 0xFF) << ": arbitred line " << (int)line << std::endl;
 			out_state = OUT_TEST_SVC;
 			break;
+		}
 		case OUT_TEST_SVC:
-			svc = SERVICE(table[selected_line].id_svc);
-			target = TARGET(table[selected_line].address);
+		{
+			Service svc = SERVICE(table[selected_line].id_svc);
+			uint16_t target = TARGET(table[selected_line].address);
 			// std::cout << "Out PE " << (int)(router_address >> 8) << "x" << (int)(router_address & 0xFF) << ": target is " << (int)target << std::endl;
 
 			if(svc == Service::CLEAR || svc == Service::ALL || (svc == Service::TARGET && target != router_address)){
@@ -238,7 +244,9 @@ void BrLiteRouter::output()
 				out_state = OUT_INIT;
 			}
 			break;
+		}
 		case OUT_SEND_LOCAL:
+		{
 			if(ack_in[LOCAL]){
 				uint16_t source = SOURCE(table[selected_line].address);
 				uint8_t src_x = source >> 8;
@@ -263,8 +271,10 @@ void BrLiteRouter::output()
 			}
 
 			break;
+		}
 		case OUT_WAIT_ACK_PORTS:
-			ack = 1;
+		{
+			bool ack = true;
 			for(int i = 0; i < NPORT; i++){
 				if(!ack_ports[i] && ack_in[i]){
 					ack_ports[i] = true;
@@ -277,7 +287,7 @@ void BrLiteRouter::output()
 			if(ack){
 				ack_ports.fill(false);
 
-				svc = SERVICE(table[selected_line].id_svc);
+				Service svc = SERVICE(table[selected_line].id_svc);
 				if(svc == Service::CLEAR){
 					// std::cout << "Out PE " << (int)(router_address >> 8) << "x" << (int)(router_address & 0xFF) << ": ports acked. clearing now" << std::endl;
 					out_state = OUT_CLEAR_TABLE;
@@ -287,15 +297,18 @@ void BrLiteRouter::output()
 				}
 			}
 			break;
-		case OUT_WAIT_ACK_DOWN:			
+		}
+		case OUT_WAIT_ACK_DOWN:
+		{	
 			if(!ack_in[LOCAL]){
 				// std::cout << "Out PE " << (int)(router_address >> 8) << "x" << (int)(router_address & 0xFF) << ": local acked down" << std::endl;
 				out_state = OUT_INIT;
-			}
-			
+			}	
 			break;
+		}
 		case OUT_CLEAR_TABLE:
-			target = TARGET(table[selected_line].address);
+		{
+			uint16_t target = TARGET(table[selected_line].address);
 			if(target == router_address){
 				uint16_t source = SOURCE(table[selected_line].address);
 				uint8_t src_x = source >> 8;
@@ -316,6 +329,7 @@ void BrLiteRouter::output()
 
 			out_state = OUT_INIT;
 			break;
+		}
 	}
 }
 
@@ -354,9 +368,9 @@ void BrLiteRouter::input_output()
 		wrote_local = false;
 	}
 
-	Service svc;
 	switch(in_state){
 		case IN_WRITE:
+		{
 			table[free_idx].used = true;
 			table[free_idx].pending = true;
 			table[free_idx].id_svc = id_svc_in[selected_port];
@@ -368,24 +382,31 @@ void BrLiteRouter::input_output()
 				wrote_idx = free_idx;
 			}
 			break;
+		}
 		case IN_CLEAR:
-			svc = SERVICE(table[source_idx].id_svc);
+		{
+			Service svc = SERVICE(table[source_idx].id_svc);
 			if(svc != Service::CLEAR && !table[source_idx].pending){
 				table[source_idx].id_svc = (table[source_idx].id_svc & 0xFC) | static_cast<uint8_t>(Service::CLEAR);
 				table[source_idx].pending = true;
 			}
 			break;
+		}
 		default:
 			break;
 	}
 
 	switch(out_state){
 		case OUT_TEST_SVC:
+		{
 			table[selected_line].pending = false;
 			break;
+		}
 		case OUT_CLEAR_TABLE:
+		{
 			table[selected_line].used = false;
 			break;
+		}
 		default:
 			break;
 	}
