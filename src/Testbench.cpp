@@ -112,17 +112,17 @@ void Testbench::send()
 			address_out[src] = address;
 
 			uint8_t id_svc = 0;
-			id_svc |= (msgids[src] << 2);
-			id_svc |= (PACKETS[i][4] & 0x3);
+			id_svc |= (msgids[src] << 3);
+			id_svc |= (PACKETS[i][4] & 0x7);
 			id_svc_out[src] = id_svc;
 			msgids[src]++;
-			msgids[src] %= 0x3F;
+			msgids[src] %= 0x1F;
 
 			pkt_used[i] = true;
 			std::cout << "-----------------------------------------  INSERT SERVICE " <<
 				(int)src << " " << PACKETS[i][2] << " " <<
 				PACKETS[i][3] << " " <<
-				(PACKETS[i][4] & 0x3) << std::endl;
+				(PACKETS[i][4] & 0x7) << std::endl;
 		}
 	}
 
